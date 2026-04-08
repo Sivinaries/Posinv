@@ -1,0 +1,128 @@
+<?php
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ChairController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\DiscountController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\IngredientController;
+use App\Http\Controllers\InventController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Pagescontroller;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\QrController;
+use App\Http\Controllers\SettlementController;
+use App\Http\Controllers\ShowcaseController;
+use App\Http\Controllers\StoreController;
+use Illuminate\Support\Facades\Route;
+
+// AUTH CONTROLLER
+Route::get('/', [AuthController::class, 'login'])->name('login');
+Route::match(['get', 'post'], '/signin', [AuthController::class, 'signin'])->name('signin');
+
+Route::fallback(function () {
+    return response()->view('errors.404', [], 404);
+});
+
+Route::middleware(['auth:sanctum', 'ensure'])->group(function () {
+    // ADMIN
+
+    // PAGES CONTROLLER
+    Route::get('/dashboard', [Pagescontroller::class, 'dashboard'])->name('dashboard');
+    Route::get('/search', [Pagescontroller::class, 'search'])->name('search');
+
+    // STORE CONTROLLER
+    Route::get('/addstore', [StoreController::class, 'create'])->name('addstore');
+    Route::post('/poststore', [StoreController::class, 'store'])->name('poststore');
+
+    // CHAIR CONTROLLER
+    Route::get('/chair', [ChairController::class, 'index'])->name('chair');
+    Route::post('/postchair', [ChairController::class, 'store'])->name('postchair');
+    Route::delete('/chair/{id}/delete', [ChairController::class, 'destroy'])->name('delchair');
+
+    // QR CONTROLLER
+    Route::get('/login/qr/{id}', [QrController::class, 'LoginQr'])->name('login-qr');
+
+    // INVENT CONTROLLER
+    Route::get('/invent', [InventController::class, 'index'])->name('invent');
+    Route::post('/postinvent', [InventController::class, 'store'])->name('postinvent');
+    Route::put('/invent/{id}/update', [InventController::class, 'update'])->name('updateinvent');
+    Route::delete('/invent/{id}/delete', [InventController::class, 'destroy'])->name('delinvent');
+
+    // ORDER CONTROLLER
+    Route::get('/order', [OrderController::class, 'index'])->name('order');
+    Route::get('/createorder', [OrderController::class, 'create'])->name('addorder');
+    Route::post('/postorder', [OrderController::class, 'store'])->name('postorder');
+    Route::delete('/order/{id}/delete', [OrderController::class, 'destroy'])->name('delorder');
+    Route::post('/order/{orderId}/archive', [OrderController::class, 'archive'])->name('archive');
+    Route::post('/cashpayment', [OrderController::class, 'cashpayment'])->name('cashpayment');
+
+    // MENU CONTROLLER
+    Route::get('/product', [ProductController::class, 'index'])->name('product');
+    Route::get('/createproduct', [ProductController::class, 'create'])->name('addproduct');
+    Route::post('/postproduct', [ProductController::class, 'store'])->name('postproduct');
+    Route::get('/editproduct/{id}', [ProductController::class, 'edit'])->name('editproduct');
+    Route::get('/product/{id}/show', [ProductController::class, 'show'])->name('showproduct');
+    Route::put('/product/{id}/update', [ProductController::class, 'update'])->name('updateproduct');
+    Route::delete('/product/{id}/delete', [ProductController::class, 'destroy'])->name('delproduct');
+
+    // INGREDIENT CONTROLLER
+    Route::get('/ingridient', [IngredientController::class, 'index'])->name('ingridient');
+    Route::get('/addingridient', [IngredientController::class, 'create'])->name('addingridient');
+    Route::post('/postingridient', [IngredientController::class, 'store'])->name('postingridient');
+    Route::get('/editingridient/{id}', [IngredientController::class, 'edit'])->name('editingridient');
+    Route::put('/ingridient/{id}/update', [IngredientController::class, 'update'])->name('updateingridient');
+    Route::delete('/ingridient/{id}/delete', [IngredientController::class, 'destroy'])->name('delingridient');
+
+    // CATEGORY CONTROLLER
+    Route::get('/category', [CategoryController::class, 'index'])->name('category');
+    Route::post('/postcategory', [CategoryController::class, 'store'])->name('postcategory');
+    Route::put('/category/{id}/update', [CategoryController::class, 'update'])->name('updatecategory');
+    Route::delete('/category/{id}/delete', [CategoryController::class, 'destroy'])->name('delcategory');
+
+    // SHOWCASE CONTROLLER
+    Route::get('/showcase', [ShowcaseController::class, 'index'])->name('showcase');
+    Route::post('/postshowcase', [ShowcaseController::class, 'store'])->name('postshowcase');
+    Route::put('/showcase/{id}/update', [ShowcaseController::class, 'update'])->name('updateshowcase');
+    Route::delete('/showcase/{id}/delete', [ShowcaseController::class, 'destroy'])->name('delshowcase');
+
+    // HISTORY CONTROLLER
+    Route::get('/history', [HistoryController::class, 'index'])->name('history');
+    Route::get('/export-orders', [HistoryController::class, 'exportOrders'])->name('exportOrders');
+
+    // CART  CONTROLLER
+    Route::get('/cart', [CartController::class, 'index'])->name('addcart');
+    Route::post('/postcart', [CartController::class, 'store'])->name('postcart');
+    Route::delete('/cart/{id}/delete', [CartController::class, 'destroy'])->name('removecart');
+
+    // DISCOUNT CONTROLLER
+    Route::get('/discount', [DiscountController::class, 'index'])->name('discount');
+    Route::post('/postdiscount', [DiscountController::class, 'store'])->name('postdiscount');
+    Route::put('/discount/{id}/update', [DiscountController::class, 'update'])->name('updatediscount');
+    Route::delete('/discount/{id}/delete', [DiscountController::class, 'destroy'])->name('deldiscount');
+
+    // EXPENSE CONTROLLER
+    Route::get('/expense', [ExpenseController::class, 'index'])->name('expense');
+    Route::post('/postexpense', [ExpenseController::class, 'store'])->name('postexpense');
+    Route::put('/expense/{id}/update', [ExpenseController::class, 'update'])->name('updateexpense');
+    Route::delete('/expense/{id}/delete', [ExpenseController::class, 'destroy'])->name('delexpense');
+
+    // SETTLEMENT CONTROLLER
+    Route::get('/settlement', [SettlementController::class, 'index'])->name('settlement');
+    Route::get('/settlement/{id}/show', [SettlementController::class, 'show'])->name('showsettlement');
+    Route::delete('/settlement/{id}/delete', [SettlementController::class, 'destroy'])->name('delsettlement');
+    Route::get('/addstartamount', [SettlementController::class, 'startamount'])->name('addstartamount');
+    Route::get('/addtotalamount', [SettlementController::class, 'totalamount'])->name('addtotalamount');
+    Route::post('/createstart', [SettlementController::class, 'poststart'])->name('poststart');
+    Route::post('/createtotal', [SettlementController::class, 'posttotal'])->name('posttotal');
+
+    // CONSULT
+    Route::get('/bot', [ChatController::class, 'bot'])->name('bot');
+    Route::post('/gen', [ChatController::class, 'gen'])->name('gen');
+
+    // LOGOUT
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+});

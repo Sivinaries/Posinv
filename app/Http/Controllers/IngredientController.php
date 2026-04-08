@@ -1,0 +1,105 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Invent;
+use App\Models\InventMenu;
+use App\Models\Menu;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+
+class IngredientController extends Controller
+{
+    private function clearCache()
+    {
+        Cache::forget('ingridients');
+    }
+
+    public function index()
+    {
+        $menus = Cache::remember(
+            'ingridients',
+            now()->addMinutes(60),
+            fn () => Menu::with(['invents'])->get()
+        );
+
+        return view('ingridient', compact('menus'));
+    }
+
+    public function create()
+    {
+        $menus = Menu::all();
+        $invents = Invent::all();
+
+        return view('addingridient', compact('menus', 'invents'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'menu_id' => 'required|exists:menus,id',
+            'ingredients' => 'required|array|min:1',
+            'ingredients.*.invent_id' => 'required|exists:invents,id',
+            'ingredients.*.quantity_used' => 'required|numeric|min:1',
+        ]);
+
+        foreach ($request->ingredients as $ingredient) {
+            InventMenu::create([
+                'menu_id' => $request->menu_id,
+                'invent_id' => $ingredient['invent_id'],
+                'quantity_used' => $ingredient['quantity_used'],
+            ]);
+        }
+
+        $this->clearCache();
+
+        return redirect(route('ingridient'))->with('success', 'Ingredients successfully added!');
+    }
+
+    public function edit($id)
+    {
+        $menu = Menu::with('invents')->findOrFail($id);
+        $invents = Invent::all();
+
+        return view('editingridient', compact('menu', 'invents'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'ingredients' => 'required|array|min:1',
+            'ingredients.*.invent_id' => 'required|exists:invents,id',
+            'ingredients.*.quantity_used' => 'required|numeric|min:1',
+        ]);
+
+        $menu = Menu::findOrFail($id);
+
+        // Hapus ingredients lama
+        InventMenu::where('menu_id', $menu->id)->delete();
+
+        // Tambahkan ingredients baru
+        foreach ($request->ingredients as $ingredient) {
+            InventMenu::create([
+                'menu_id' => $menu->id,
+                'invent_id' => $ingredient['invent_id'],
+                'quantity_used' => $ingredient['quantity_used'],
+            ]);
+        }
+
+        $this->clearCache();
+
+        return redirect(route('ingridient'))->with('success', 'Ingredients successfully updated!');
+    }
+
+    public function destroy($id)
+    {
+        $menu = Menu::findOrFail($id);
+
+        // Hapus semua relasi ingredients untuk menu ini
+        InventMenu::where('menu_id', $menu->id)->delete();
+
+        $this->clearCache();
+
+        return redirect(route('ingridient'))->with('success', 'Ingredients successfully deleted!');
+    }
+}
