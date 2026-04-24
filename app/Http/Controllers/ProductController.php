@@ -3,44 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\CartMenu;
-use App\Models\Category;
 use App\Models\Discount;
 use App\Models\Menu;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    private function clearCache()
-    {
-        Cache::forget('menus');
-
-        Cache::forget('categories');
-
-        Cache::forget('categories_with_menus');
-    }
 
     public function index()
     {
-        $category = Cache::remember(
-            'categories',
-            now()->addMinutes(60),
-            fn () => Category::with(['menus'])->get()
-        );
+        $userStore = Auth::user()->store;
+
+        $cacheKey = "menu_{$userStore->id}";
+
+        $category = Cache::remember($cacheKey, 180, function () use ($userStore) {
+            return $userStore->categories()->with('menus')->get();
+        });
 
         return view('product', compact('category'));
     }
 
-    public function create()
-    {
-        $category = Category::all();
-
-        return view('addproduct', compact('category'));
-    }
-
     public function store(Request $request)
     {
+        $userStore = Auth::user()->store;
+
         $data = $request->validate([
             'name' => 'required',
             'price' => 'required',
@@ -53,12 +42,21 @@ class ProductController extends Controller
             $uploadedImage = $request->file('img');
             $imageName = $uploadedImage->getClientOriginalName();
             $imagePath = $uploadedImage->storeAs('img', $imageName, 'public');
-            $data['img'] = 'img/'.$imageName;
+            $data['img'] = 'img/' . $imageName;
         }
 
-        Menu::create($data);
+        $data['store_id'] = $userStore->id;
 
-        $this->clearCache();
+        Menu::create([
+            'name' => $data['name'],
+            'price' => $data['price'],
+            'img' => $data['img'],
+            'description' => $data['description'],
+            'category_id' => $data['category_id'],
+            'store_id' => $userStore->id,
+        ]);
+
+        $this->clearCache($userStore->id);
 
         return redirect(route('product'))->with('success', 'Product Sukses Dibuat !');
     }
@@ -75,18 +73,11 @@ class ProductController extends Controller
         return view('showproduct', compact('menu', 'discount'));
     }
 
-    public function edit($id)
-    {
-        $category = Category::all();
-
-        $menu = Menu::find($id);
-
-        return view('editproduct', compact('menu', 'category'));
-    }
-
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $userStore = Auth::user()->store;
+
+        $data = $request->validate([
             'name' => 'required',
             'price' => 'required',
             'img' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -94,25 +85,41 @@ class ProductController extends Controller
             'category_id' => 'required',
         ]);
 
-        $menuData = $request->only(['name', 'price', 'img', 'description', 'category_id']);
-
         if ($request->hasFile('img')) {
             $uploadedImage = $request->file('img');
             $imageName = $uploadedImage->getClientOriginalName();
             $imagePath = $uploadedImage->storeAs('img', $imageName, 'public');
-            $menuData['img'] = 'img/'.$imageName;
+            $menuData['img'] = 'img/' . $imageName;
         }
 
-        Menu::where('id', $id)->update($menuData);
+        $menu = Menu::where('id', $id)
+            ->where('store_id', $userStore->id)
+            ->firstOrFail();
 
-        $this->clearCache();
+        $menu->update([
+            'name' => $data['name'],
+            'price' => $data['price'],
+            'img' => $data['img'],
+            'description' => $data['description'],
+            'category_id' => $data['category_id'],
+        ]);
+
+        $this->clearCache($userStore->id);
 
         return redirect(route('product'))->with('success', 'Product Sukses Diupdate !');
     }
 
     public function destroy($id)
     {
-        $menu = Menu::findOrFail($id);
+        $userStore = Auth::user()->store;
+
+        $menu = Menu::where('id', $id)
+            ->where('store_id', $userStore->id)
+            ->first();
+
+        if (! $menu) {
+            return redirect(route('product'))->withErrors(['msg' => 'Product tidak ditemukan.']);
+        }
 
         // hapus relasi cart_menu
         CartMenu::where('menu_id', $id)->delete();
@@ -123,8 +130,14 @@ class ProductController extends Controller
         }
 
         $menu->delete();
-        $this->clearCache();
+
+        $this->clearCache($userStore->id);
 
         return redirect()->route('product')->with('success', 'Product berhasil dihapus!');
+    }
+
+    private function clearCache(int $storeId): void
+    {
+        Cache::forget("menu_{$storeId}");
     }
 }

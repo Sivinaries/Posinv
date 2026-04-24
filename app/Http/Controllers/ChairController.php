@@ -12,7 +12,6 @@ use Illuminate\Support\Str;
 
 class ChairController extends Controller
 {
-
     public function index()
     {
         $userStore = Auth::user()->store;

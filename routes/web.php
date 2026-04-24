@@ -62,9 +62,7 @@ Route::middleware(['auth:sanctum', 'ensure'])->group(function () {
 
     // MENU CONTROLLER
     Route::get('/product', [ProductController::class, 'index'])->name('product');
-    Route::get('/createproduct', [ProductController::class, 'create'])->name('addproduct');
     Route::post('/postproduct', [ProductController::class, 'store'])->name('postproduct');
-    Route::get('/editproduct/{id}', [ProductController::class, 'edit'])->name('editproduct');
     Route::get('/product/{id}/show', [ProductController::class, 'show'])->name('showproduct');
     Route::put('/product/{id}/update', [ProductController::class, 'update'])->name('updateproduct');
     Route::delete('/product/{id}/delete', [ProductController::class, 'destroy'])->name('delproduct');

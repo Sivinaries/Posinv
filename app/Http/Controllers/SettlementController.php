@@ -25,7 +25,7 @@ class SettlementController extends Controller
 
     public function poststart(Request $request)
     {
-                $userStore = Auth::user()->store;
+        $userStore = Auth::user()->store;
 
         $data = $request->validate([
             'start_amount' => 'nullable|numeric',
@@ -60,7 +60,7 @@ class SettlementController extends Controller
         $latestSettlement->update($data);
 
         $this->clearCache($userStore->id);
-        
+
         Cache::forget("settlement_{$latestSettlement->id}");
 
         return redirect(route('settlement'))->with('success', 'Shift ended successfully!');
